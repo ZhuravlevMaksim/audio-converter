@@ -12,3 +12,4 @@ target = "wasm32-unknown-unknown"
 [dependencies]
 youtube-url-unwrap = { git = "https://github.com/ZhuravlevMaksim/youtube-url-unwrap" }
 symphonia = "0.1.0"
+tokio = { version = "1", features = ["full"] }

@@ -1,9 +1,14 @@
-use youtube_url_unwrap::eval;
+use std::env;
 
-fn main() {
-    eval("function foo() {
-    const i = 1+2+4
-     return i
-    }
-    foo()")
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let args: Vec<String> = env::args().collect();
+    println!("{:?}", args);
+
+    let stream = youtube_url_unwrap::platform::get_opus_stream(args.get(1).unwrap());
+
+    println!("{:#?}", stream.await?);
+
+    Ok(())
+
 }
