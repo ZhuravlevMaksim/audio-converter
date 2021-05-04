@@ -1,6 +1,6 @@
 [package]
 name = "audio-converter"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["m.zhuravlev <maks723@yandex.ru>"]
 edition = "2018"
 
@@ -13,3 +13,4 @@ target = "wasm32-unknown-unknown"
 youtube-url-unwrap = { git = "https://github.com/ZhuravlevMaksim/youtube-url-unwrap" }
 symphonia = "0.1.0"
 tokio = { version = "1", features = ["full"] }
+reqwest = { version = "0.11.3" }
