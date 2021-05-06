@@ -1,24 +1,52 @@
-use std::env;
+use std::{env, io};
 use youtube_url_unwrap::Extractor;
 use std::process::{exit, Command};
 use std::fs::{File, rename};
 use tempfile::tempdir;
-use std::io::{Write, BufWriter};
+use std::io::{Write, BufWriter, Read};
 use std::ffi::OsStr;
+use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
-    println!("{:?}", args);
 
-    let uid = if let Some(uid) = args.get(1) {
-        println!("Working on: {:?}", uid);
-        uid
-    } else {
-        println!("No uid arg, exit.");
-        exit(0)
-    };
+    if let Some(uid) = args.get(1) {
+        if uid.contains("y_uid.json") {
+            // let mut buffer = String::new();
+            // io::stdin().read_line(&mut buffer).expect("correct uid");
+            write_web_nm(&serde_json::to_string(&args).unwrap())?
+        } else {
+            println!("Working on: {:?}", uid);
+            extract(&uid).await?
+        };
+    }
 
+    Ok(())
+}
+
+// todo: тут по всей видимости нужно передать размер в начале, но все это магия какая-то, надо почитать
+pub fn write_web_nm(msg: &str) -> io::Result<()> {
+    let mut outstream = io::stdout();
+
+    let message = serde_json::to_string(msg)?;
+
+    let len = message.len();
+    if len > 1024 * 1024 {
+        panic!("Message was too large, length: {}", len)
+    }
+
+    // тут особенно
+    let mut size_vector = vec![];
+    size_vector.write_u32::<LittleEndian>(len as u32).unwrap();
+
+    outstream.write(&size_vector)?;
+    outstream.write_all(message.as_bytes())?;
+    outstream.flush()?;
+    Ok(())
+}
+
+async fn extract(uid: &str) -> Result<(), Box<dyn std::error::Error>> {
     let stream = Extractor::new().get_opus_stream(uid).await?;
 
     println!("{:#?}", stream);
@@ -49,7 +77,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .output()
         .expect("failed to execute process");
 
-    rename(tmp_name,  format!("{}.mp3", stream.title));
+    rename(tmp_name, format!("{}.mp3", stream.title));
 
     drop(file);
     dir.close()?;
