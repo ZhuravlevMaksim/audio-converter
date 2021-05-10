@@ -13,8 +13,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     if let Some(uid) = args.get(1) {
         if uid.contains("y_uid.json") {
-            // let mut buffer = String::new();
-            // io::stdin().read_line(&mut buffer).expect("correct uid");
+            let input = read_input()?;
+            let uid = input.get("uid").unwrap().as_str().unwrap();
+            extract(uid).await?;
             write_web_nm(&serde_json::to_string(&args).unwrap())?
         } else {
             println!("Working on: {:?}", uid);
@@ -46,18 +47,27 @@ pub fn write_web_nm(msg: &str) -> io::Result<()> {
     Ok(())
 }
 
+pub fn read_input() -> io::Result<serde_json::Value> {
+    let mut input = io::stdin();
+    let length = input.read_u32::<LittleEndian>().unwrap();
+    let mut buffer = vec![0; length as usize];
+    input.read_exact(&mut buffer)?;
+    let json_val: serde_json::Value = serde_json::from_slice(&buffer).unwrap();
+    Ok(json_val)
+}
+
 async fn extract(uid: &str) -> Result<(), Box<dyn std::error::Error>> {
     let stream = Extractor::new().get_opus_stream(uid).await?;
 
-    println!("{:#?}", stream);
-    println!("downloading...");
+    // println!("{:#?}", stream);
+    // println!("downloading...");
 
     let client = reqwest::Client::new();
     let res = client.get(stream.url.unwrap())
         .send().await?
         .bytes().await?;
 
-    println!("prepare file");
+    // println!("prepare file");
 
     let dir = tempdir()?;
     let temp_opus = dir.path().join("temp.opus");
@@ -65,12 +75,12 @@ async fn extract(uid: &str) -> Result<(), Box<dyn std::error::Error>> {
     BufWriter::new(&file).write_all(&res)
         .expect("Unable to write data");
 
-    println!("{:?}", OsStr::new(&temp_opus));
+    // println!("{:?}", OsStr::new(&temp_opus));
 
     let tmp_name = "tmp.mp3"; // workaround for cmd /c when need quotes
     let command = format!("ffmpeg -i {} -vn -ar 44100 -ac 2 -b:a 192k {}", OsStr::new(&temp_opus).to_str().unwrap(), tmp_name);
 
-    println!("{:?}", &command);
+    // println!("{:?}", &command);
 
     Command::new("cmd")
         .args(&["/C", &command])
@@ -82,7 +92,7 @@ async fn extract(uid: &str) -> Result<(), Box<dyn std::error::Error>> {
     drop(file);
     dir.close()?;
 
-    println!("done");
+    // println!("done");
 
     Ok(())
 }
