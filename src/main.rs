@@ -58,7 +58,7 @@ pub fn read_input() -> io::Result<serde_json::Value> {
     Ok(json_val)
 }
 
-async fn send_multipart() -> Result<(), Box<dyn std::error::Error>> {
+async fn send_multipart(ip: String) -> Result<(), Box<dyn std::error::Error>> {
 
     let mut buffer = Vec::new();
     File::open("./y_uid.json")?.read_to_end(&mut buffer)?;
@@ -69,7 +69,7 @@ async fn send_multipart() -> Result<(), Box<dyn std::error::Error>> {
     let multipart = reqwest::multipart::Form::new().part("files", file);
 
     let client = reqwest::Client::new();
-    let res = client.post(format!("http://{}:12284", local_ipaddress::get().unwrap()))
+    let res = client.post(format!("http://{}:12284", ip))
         .multipart(multipart)
         .send().await?;
 
