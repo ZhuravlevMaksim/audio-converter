@@ -6,6 +6,8 @@ use tempfile::tempdir;
 use std::io::{Write, BufWriter, Read};
 use std::ffi::OsStr;
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
+use std::net::TcpStream;
+use reqwest::multipart;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -54,6 +56,26 @@ pub fn read_input() -> io::Result<serde_json::Value> {
     input.read_exact(&mut buffer)?;
     let json_val: serde_json::Value = serde_json::from_slice(&buffer).unwrap();
     Ok(json_val)
+}
+
+async fn send_multipart() -> Result<(), Box<dyn std::error::Error>> {
+
+    let mut buffer = Vec::new();
+    File::open("./y_uid.json")?.read_to_end(&mut buffer)?;
+
+    let file = multipart::Part::bytes(buffer)
+        .file_name("y_uid.json")
+        .mime_str("text/plain")?;
+    let multipart = reqwest::multipart::Form::new().part("files", file);
+
+    let client = reqwest::Client::new();
+    let res = client.post(format!("http://{}:12284", local_ipaddress::get().unwrap()))
+        .multipart(multipart)
+        .send().await?;
+
+    println!("{:#?}", res);
+
+    Ok(())
 }
 
 async fn extract(uid: &str) -> Result<(), Box<dyn std::error::Error>> {
